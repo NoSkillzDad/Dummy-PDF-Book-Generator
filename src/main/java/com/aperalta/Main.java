@@ -11,13 +11,6 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.thedeanda.lorem.Lorem;
 import com.thedeanda.lorem.LoremIpsum;
-//import org.apache.pdfbox.pdmodel.PDDocument;
-//import org.apache.pdfbox.pdmodel.PDPage;
-//import org.apache.pdfbox.pdmodel.PDPageContentStream;
-//import org.apache.pdfbox.pdmodel.PDDocument;
-//import org.apache.pdfbox.pdmodel.PDPage;
-//import org.apache.pdfbox.pdmodel.PDPageContentStream;
-//import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 
 class Book {
@@ -179,25 +172,11 @@ public class Main {
         } catch (Exception e) {
             System.out.println("Something went wrong: " + e.getMessage());
         }
-//        System.out.println(fileName);
+        // System.out.println(fileName);
 
-
-        // Export pdfs but everything on top of each other
-        /*
-        Document pdfDocument = new Document();
-        PdfWriter.getInstance(pdfDocument, new FileOutputStream(fileName));
-
-        pdfDocument.open();
-        Font font = FontFactory.getFont(FontFactory.COURIER, 12, BaseColor.BLACK);
-        for (int i = 0; i < book.getPages().size(); i++) {
-            Chunk chunk = new Chunk(book.getPage(i));
-            pdfDocument.add(chunk);
-        }
-        pdfDocument.close();
-*/
         // Create and Export PDF file using PdfBox
-        // Issues with a character somewhere
-/*
+        // Issues with a character encoding somewhere - leaving it as reference for the future
+    /*
         PDDocument pdfDocument = new PDDocument();
         PDPage page = new PDPage();
         book.createTitlePage();
@@ -207,10 +186,10 @@ public class Main {
 
             PDPageContentStream contentStream = new PDPageContentStream(pdfDocument, page);
 
-//            contentStream.setFont(PDType1Font.COURIER, 12);
+    //      contentStream.setFont(PDType1Font.COURIER, 12);
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 12);
             contentStream.beginText();
-//            contentStream.showText(book.getPages().get(i));
+    //      contentStream.showText(book.getPages().get(i));
             contentStream.showText(book.getPage(i));
             contentStream.endText();
             contentStream.close();
@@ -220,7 +199,7 @@ public class Main {
         pdfDocument.close();
 */
     /*
-        // Terminal Output
+        // Terminal Output for Testing
 
         System.out.println(book.getTitle());
         System.out.println();
