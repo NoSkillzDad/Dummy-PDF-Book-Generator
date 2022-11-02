@@ -1,6 +1,8 @@
 package com.aperalta;
 
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -11,6 +13,8 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.thedeanda.lorem.Lorem;
 import com.thedeanda.lorem.LoremIpsum;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 
 class Book {
@@ -101,49 +105,100 @@ class Book {
 
 public class Main {
 
-    static int bookCount = 0;
+    static int bookCount = 1;
 
     public static void main(String[] args) {
 
 
-        int numBooks = 50; // number of books to create
+        // ========== Book Setup ============== //
+        int numBooks = 15; // number of books to create
         int numAuthors = 3; // number of authors
-        int numParagraphsPerPage = 6;
-        int numPages = 10;
-        String folder = "./books/"; //Existing folder at the base level of your project (/src for example)
-        int[] wordsInTitle = new int[2];
-        boolean isNumAuthorsFixed = true;
+        int numParagraphsPerPage = 6; // Paragraphs are of variable size. This is an estimate for lorem ipsum
+        int numPages = 10; // Estimated number of pages you want in the book (Final number could be + or -
+        String folder = "./books/"; //Existing folder at the base level of your project (/src for example) where books are gonna be exported
+        boolean isNumAuthorsFixed = true; // if you want numAuthors to be the that for all the books. if false, then a random number between 1 and numAuthors will be used
+        int[] wordsInTitle = new int[2]; // Defined below
+
+        // Assign Limits for number of words in Title
+        wordsInTitle[0] = 1; // Lower limit
+        wordsInTitle[1] = 5; // Upper limit
+
+        // ============= JSON Setup ================== //
+        String jsonFilename = "fake-books-db.json";
+        boolean exportForJsonServer = true; // set to true if exported json file is to be used with json-server, otherwise, false.
+        JSONArray booksList = new JSONArray();
 
         Book book = new Book();
 
-        // Assign Limits for number of words in Title
-        wordsInTitle[0] = 1;
-        wordsInTitle[1] = 5;
-
         for (int i = 0; i < numBooks; i++) {
+
+            // cover some but not all of input setting up errors.
+            if (numAuthors < 1 || numBooks < 1 || numParagraphsPerPage < 1 || numPages < 1) System.exit(1);
+
             book = createBook(wordsInTitle, numAuthors, isNumAuthorsFixed, numParagraphsPerPage,numPages);
-            exportBookPDF(book, folder);
+            String filename = exportBookPDF(book, folder);
+
+
+            JSONObject jsonObject = new JSONObject();
+
+            jsonObject.put("id", bookCount);
+            jsonObject.put("filename", filename);
+            jsonObject.put("title",book.getTitle());
+            jsonObject.put("authors", book.getAuthors());
+            jsonObject.put("excerpt", book.getExcerpt());
+
+            booksList.add(jsonObject);
+
             bookCount++;
         }
 
-        System.out.println(numBooks + " LoremIpsum PDF Books Generated");
+        if (exportForJsonServer) {
+            JSONObject jsonObjectJS = new JSONObject();
+            jsonObjectJS.put("books", booksList);
+            writeJSON(jsonFilename, jsonObjectJS);
+        } else {
+            writeJSON(jsonFilename, booksList);
+        }
+
+        System.out.println(numBooks + " Lorem Ipsum PDF books and 'fake-books-db.json' generated");
     }
 
-    static void exportBookPDF(Book book, String folder) {
+    private static void writeJSON(String filename, JSONArray booksList) {
+//        try (FileWriter file = new FileWriter("fake-books-db.json")) {
+        try (FileWriter file = new FileWriter(filename)) {
+            file.write(booksList.toJSONString());
+            file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeJSON(String filename, JSONObject booksList) {
+//        try (FileWriter file = new FileWriter("fake-books-db.json")) {
+        try (FileWriter file = new FileWriter(filename)) {
+            file.write(booksList.toJSONString());
+            file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //    static void exportBookPDF(Book book, String folder) {
+    static String exportBookPDF(Book book, String folder) {
         //Generate unique filename based on book Title
         String fileName = book.getTitle().replace(" ", "_") + "-" + bookCount + ".pdf";
         if (fileName.length() > 23) {
             fileName = fileName.substring(0, 10) + "-" + bookCount + ".pdf";
         }
-        fileName = folder + fileName;
+        // Moved the folder part to the PdfWriter itself to keep filename "clean" to use it in JSON below
+//        fileName = folder + fileName;
 
-        book.createTitlePage();
-
+        book.createTitlePage(); //Used to add a Title + Authors page at the front of the Book
 
         // Create and Export PDF file using IText
         try {
             Document pdfDocument = new Document();
-            PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream(fileName));
+            PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream(folder + fileName));
             pdfDocument.open();
             // Margins
             pdfDocument.setMarginMirroring(true);
@@ -172,6 +227,24 @@ public class Main {
         } catch (Exception e) {
             System.out.println("Something went wrong: " + e.getMessage());
         }
+
+        return fileName;
+//        finally {
+            //add book entry to json file
+            /* JSON format
+            {
+            "Title": "<Book.title>",
+            "Author": [
+                <Book.author1>,
+                <Book.authors>,
+                <Book.author3>
+            ],
+            "Excerpt": "<Book.excerpt>",
+            "Filename": "<Filename>"
+            }
+
+             */
+//        }
         // System.out.println(fileName);
 
         // Create and Export PDF file using PdfBox
@@ -211,6 +284,8 @@ public class Main {
         book.pagesToString();
 //        System.out.println(book.getPages());
      */
+
+
     }
 
     static Book createBook(int[] titleLength, int numAuthors, boolean fixedNumAuthors, int numParagraphsPerPage, int numPages) {
@@ -243,25 +318,3 @@ public class Main {
         return random.nextInt(max - min) + min;
     }
 }
-
-/*
-==================================================================
-Dummy PDF should contain
-
-- Book Title
-- Author(s) (default 1, max 4) - random, fixed
-- Excerpt (1 paragraph)
-- Book Content (Max 5 pages -4 paragraphs per page) - random, fixed
-
---------------------------------
-
-- Generate random Title
-- Determine number of authors -random
-- Loop over authors
-- Generate Excerpt
-- Determine number of pages
-- Generate number of pages
-- Save Book
-
- ==================================================================
- */
