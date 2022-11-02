@@ -1,136 +1,29 @@
 package com.aperalta;
 
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfWriter;
 import com.thedeanda.lorem.Lorem;
 import com.thedeanda.lorem.LoremIpsum;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
 
-class Book {
-    private String title;
-    private ArrayList<String> authors;
-    private String excerpt;
-    private ArrayList<String> pages;
+public class Alternative {
 
-    public Book() {
-        authors = new ArrayList<>();
-        pages = new ArrayList<>();
-    }
-
-    public Book(String title) {
-        this.title = title;
-        authors = new ArrayList<>();
-        pages = new ArrayList<>();
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public ArrayList<String> getAuthors() {
-        return authors;
-    }
-
-    public void setAuthors(ArrayList<String> authors) {
-        this.authors = authors;
-    }
-
-    public String getExcerpt() {
-        return excerpt;
-    }
-
-    public void setExcerpt(String excerpt) {
-        this.excerpt = excerpt;
-    }
-
-    public ArrayList<String> getPages() {
-        return pages;
-    }
-
-    public void setPages(ArrayList<String> pages) {
-        this.pages = pages;
-    }
-
-    public void addPage(String page) {
-//        System.out.println(page.length());
-        this.pages.add(page);
-    }
-
-    public void addAuthor(String author) {
-        this.authors.add(author);
-    }
-
-    public void authorsToString() {
-        for (String author : this.authors) {
-            System.out.println(author);
-        }
-    }
-
-    public void pagesToString() {
-        for (String page : this.pages) {
-            System.out.println(page);
-        }
-    }
-
-    public void createTitlePage() {
-        String titlePage = "\n" + this.title + "\n" +
-                "\n\nAuthors\n" + this.authors.toString() + "\n\n\n\n";
-        this.pages.add(0, titlePage);
-    }
-
-    public String getPage(int index) {
-        return (index < this.pages.size()) ? this.pages.get(index) : "Page Bot Found";
-    }
-
-    public int getNumberOfPages() {
-        return this.pages.size();
-    }
-
-    public ArrayList<String> getPageLines(int index, int numChars) {
-        ArrayList<String> lines = new ArrayList<>();
-        String currentLine = "";
-
-        int counter = 0;
-
-        for (int j = 0; j < this.pages.get(index).length(); j++) {
-            if (this.pages.get(index).charAt(j) != '\n' && counter < numChars) {
-                currentLine = currentLine + this.pages.get(index).charAt(j);
-                counter++;
-            } else {
-                lines.add(currentLine);
-                currentLine = "";
-                counter = 0;
-            }
-        }
-     return lines;
-    }
-}
-
-public class Main {
-
+    //TODO implement \r for new page in book
     static int bookCount = 1;
 
     public static void main(String[] args) {
 
-
         // ========== Book Setup ============== //
-        int numBooks = 15; // number of books to create
+        int numBooks = 5; // number of books to create
         int numAuthors = 3; // number of authors
         int numParagraphsPerPage = 6; // Paragraphs are of variable size. This is an estimate for lorem ipsum
         int numPages = 10; // Estimated number of pages you want in the book (Final number could be + or -
@@ -143,7 +36,7 @@ public class Main {
         wordsInTitle[1] = 5; // Upper limit
 
         // ============= JSON Setup ================== //
-        String jsonFilename = "fake-books-db.json";
+        String jsonFilename = "fake-books-db-pdfbox.json";
         boolean exportForJsonServer = true; // set to true if exported json file is to be used with json-server, otherwise, false.
         JSONArray booksList = new JSONArray();
 
@@ -183,7 +76,6 @@ public class Main {
     }
 
     private static void writeJSON(String filename, JSONArray booksList) {
-//        try (FileWriter file = new FileWriter("fake-books-db.json")) {
         try (FileWriter file = new FileWriter(filename)) {
             file.write(booksList.toJSONString());
             file.flush();
@@ -193,7 +85,6 @@ public class Main {
     }
 
     private static void writeJSON(String filename, JSONObject booksList) {
-//        try (FileWriter file = new FileWriter("fake-books-db.json")) {
         try (FileWriter file = new FileWriter(filename)) {
             file.write(booksList.toJSONString());
             file.flush();
@@ -205,49 +96,72 @@ public class Main {
     //    static void exportBookPDF(Book book, String folder) {
     static String exportBookPDF(Book book, String folder) {
         //Generate unique filename based on book Title
-        String fileName = book.getTitle().replace(" ", "_") + "-" + bookCount + ".pdf";
-        if (fileName.length() > 23) {
-            fileName = fileName.substring(0, 10) + "-" + bookCount + ".pdf";
+        String filename = book.getTitle().replace(" ", "_") + "-" + bookCount + ".pdf";
+        if (filename.length() > 23) {
+            filename = filename.substring(0, 10) + "-" + bookCount + ".pdf";
         }
-        // Moved the folder part to the PdfWriter itself to keep filename "clean" to use it in JSON below
-//        fileName = folder + fileName;
 
         // Create and Export PDF file using IText
         try {
-            Document pdfDocument = new Document();
-            PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream(folder + fileName));
-            pdfDocument.open();
-            // Margins
-            pdfDocument.setMarginMirroring(true);
-            pdfDocument.setMargins(36, 72, 108, 180);
-            pdfDocument.topMargin();
+            PDDocument pdfDocument = new PDDocument();
+            PDDocumentInformation pdd = new PDDocumentInformation();
 
-            // Font
-            BaseFont courier = BaseFont.createFont(BaseFont.COURIER, BaseFont.CP1252, BaseFont.EMBEDDED);
-            Font myFont = new Font(courier);
+            pdd.setTitle(book.getTitle());
 
-            // Font Styles
-            Font boldFont = new Font();
-            boldFont.setStyle(Font.BOLD);
-            boldFont.setSize(10);
-
-            myFont.setStyle(Font.NORMAL);
-            myFont.setSize(9);
-
-            pdfDocument.add(new com.itextpdf.text.Paragraph("\n"));
             for (int i = 0; i < book.getNumberOfPages(); i++) {
-                com.itextpdf.text.Paragraph paragraph = new com.itextpdf.text.Paragraph(book.getPage(i));
-                paragraph.setAlignment(Element.ALIGN_JUSTIFIED);
-                pdfDocument.add(paragraph);
+                PDPage currentPage = new PDPage();
+                PDPageContentStream contentStream = new PDPageContentStream(pdfDocument, currentPage);
+                contentStream.beginText();
+                // try pagewidth 615 and height 815
+                //Setting the position for the line
+                contentStream.newLineAtOffset(05, 750);
+                //Set Leading
+                contentStream.setLeading(14.5f);
+                //Setting up the Font and Font Size
+                contentStream.setFont(PDType1Font.COURIER, 9 );
+                //Write text to contentStream
+
+                // Faster but doesnt break really long lines
+                /*
+                String[] lines = book.getPage(i).split("\\r?\\n");
+                for (String line : lines) {
+                    contentStream.showText(line);
+                    contentStream.newLine();
+                }
+*/
+
+                // Generating Lines myself - less efficient, slower and flexible but better results so far
+                ArrayList<String> pageLines = new ArrayList<>();
+                pageLines = book.getPageLines(i, 90);
+
+                for (String line : pageLines) {
+                    contentStream.showText(line);
+                    contentStream.newLine();
+                }
+//                PDFTextStripper textStripper = new PDFTextStripper();
+//                textStripper.setLineSeparator("\n");
+
+//                bookPage = bookPage.replace("\n", "").replace("\r", "");
+//                contentStream.showText(bookPage);
+
+//                contentStream.newLine(); //to add a new line
+
+                contentStream.endText();
+                contentStream.close();
+                pdfDocument.addPage(currentPage);
             }
+
+
+
+            pdfDocument.save(folder + filename);
             pdfDocument.close();
         } catch (Exception e) {
             System.out.println("Something went wrong: " + e.getMessage());
         }
 
-        return fileName;
+        return filename;
 //        finally {
-            //add book entry to json file
+        //add book entry to json file
             /* JSON format
             {
             "Title": "<Book.title>",

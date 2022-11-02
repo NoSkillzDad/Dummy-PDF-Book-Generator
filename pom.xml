@@ -19,45 +19,15 @@
             <artifactId>lorem</artifactId>
             <version>2.1</version>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>pdfbox</artifactId>-->
-        <!--            <version>2.0.27</version>-->
-        <!--        </dependency>-->
-
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>fontbox</artifactId>-->
-        <!--            <version>2.0.26</version>-->
-        <!--        </dependency>-->
-
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>jempbox</artifactId>-->
-        <!--            <version>1.8.17</version>-->
-        <!--        </dependency>-->
-
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>xmpbox</artifactId>-->
-        <!--            <version>2.0.27</version>-->
-        <!--        </dependency>-->
-
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>preflight</artifactId>-->
-        <!--            <version>2.0.26</version>-->
-        <!--        </dependency>-->
-
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.pdfbox</groupId>-->
-        <!--            <artifactId>pdfbox-tools</artifactId>-->
-        <!--            <version>2.0.27</version>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
             <version>5.5.13.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.27</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
